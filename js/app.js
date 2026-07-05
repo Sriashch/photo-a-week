@@ -15,9 +15,10 @@
   let viewYear = today.getFullYear();
   let viewMonth = today.getMonth();
   let diaryMode = false;
+  let diaryPage = 0;        // 0 = cover, 1..12 = months (Jan..Dec)
   let lastDir = 'next';
 
-  // ----- one-time migration of older photo shapes -----
+  // ----- migration -----
   (function migrate() {
     let dirty = false;
     photos.forEach(p => {
@@ -65,10 +66,21 @@
     return c.toDataURL('image/jpeg', 0.78);
   }
 
-  // ----- data callbacks passed to UI -----
+  // ----- data callbacks -----
   function persistArrangement() { Store.savePhotos(photos); Store.saveMessages(messages); }
-  function deletePhoto(id)   { photos = photos.filter(p => p.id !== id); Store.savePhotos(photos); render(); }
-  function deleteMessage(id) { messages = messages.filter(m => m.id !== id); Store.saveMessages(messages); render(); }
+
+  function deletePhoto(id) {
+    UI.confirmDialog(
+      { title: 'Remove this photo?', text: "The photo and its note will be gone for good.", okLabel: 'Remove' },
+      () => { photos = photos.filter(p => p.id !== id); Store.savePhotos(photos); render(); }
+    );
+  }
+  function deleteMessage(id) {
+    UI.confirmDialog(
+      { title: 'Remove this note?', text: "This month note will be deleted.", okLabel: 'Remove' },
+      () => { messages = messages.filter(m => m.id !== id); Store.saveMessages(messages); render(); }
+    );
+  }
 
   function openMonthNote() {
     UI.openNotePanel(`${Cal.MONTHS[viewMonth]} ${viewYear}`, (text) => {
@@ -84,10 +96,20 @@
   // ----- render -----
   function render() {
     const monthSelect = $('monthSelect');
-    if (monthSelect) monthSelect.value = viewMonth;
+    if (monthSelect && !diaryMode) monthSelect.value = viewMonth;
+
+    // diary cover
+    if (diaryMode && diaryPage === 0) {
+      UI.renderCover({ year: viewYear, photos, onNavigate: turnPage });
+      updateStatus(0, 0);
+      checkReminder();
+      return;
+    }
+
+    const month = diaryMode ? diaryPage - 1 : viewMonth;
 
     const { weeks, count } = UI.renderBoard({
-      year: viewYear, month: viewMonth, diaryMode, lastDir, photos, messages,
+      year: viewYear, month, diaryMode, lastDir, photos, messages,
       onDeletePhoto: deletePhoto,
       onDeleteMessage: deleteMessage,
       onArrange: persistArrangement,
@@ -108,7 +130,7 @@
       const hasNext = viewMonth < 11;
       box.innerHTML = `<span class="done">✓ ${Cal.MONTHS[viewMonth]} complete!</span>` +
         (hasNext ? ` <button id="nextMonthBtn" class="link-btn">Go to ${Cal.MONTHS[viewMonth + 1]} →</button>` : '');
-      on('nextMonthBtn', 'click', () => { turnPage(1); });
+      on('nextMonthBtn', 'click', () => { lastDir = 'next'; viewMonth++; render(); });
     } else {
       box.innerHTML = `<span class="count">${count} of ${total} photos this month</span>`;
     }
@@ -116,6 +138,14 @@
 
   // ----- navigation -----
   function turnPage(delta) {
+    if (diaryMode) {
+      const p = diaryPage + delta;
+      if (p < 0 || p > 12) return;
+      lastDir = delta > 0 ? 'next' : 'prev';
+      diaryPage = p;
+      render();
+      return;
+    }
     const m = viewMonth + delta;
     if (m < 0 || m > 11) return;
     lastDir = delta > 0 ? 'next' : 'prev';
@@ -123,7 +153,7 @@
     render();
   }
 
-  // ----- reminder (fires while the app is open) -----
+  // ----- reminder -----
   function currentWeekMissing() {
     const y = today.getFullYear(), m = today.getMonth(), w = Cal.weekOfDate(today);
     return !photos.some(p => p.year === y && p.month === m && p.week === w);
@@ -154,9 +184,8 @@
     }
   }
 
-  // ----- wire everything up -----
+  // ----- init -----
   function init() {
-    // month dropdown
     const monthSelect = $('monthSelect');
     if (monthSelect) {
       monthSelect.innerHTML = Cal.MONTHS
@@ -168,12 +197,10 @@
     on('prevMonth', 'click', () => turnPage(-1));
     on('nextMonth', 'click', () => turnPage(1));
 
-    // theme swatches
     document.querySelectorAll('.swatch').forEach(s =>
       s.addEventListener('click', () => applyTheme(s.dataset.theme)));
     applyTheme(Store.getTheme());
 
-    // add photo
     const fileInput = $('fileInput');
     const captionInput = $('captionInput');
     if (fileInput) {
@@ -208,19 +235,23 @@
 
     on('monthNoteBtn', 'click', openMonthNote);
 
-    // diary toggle
     on('diaryBtn', 'click', () => {
       diaryMode = !diaryMode;
+      diaryPage = 0;                 // always open on the cover
+      lastDir = 'next';
       document.body.classList.toggle('diary-on', diaryMode);
       const b = $('diaryBtn');
       if (b) b.textContent = diaryMode ? '✏️ Edit' : '📖 Diary';
       render();
     });
 
-    // download month image
-    on('downloadBtn', 'click', () => UI.downloadMonth(`${Cal.MONTHS[viewMonth]} ${viewYear}`));
+    on('downloadBtn', 'click', () => {
+      const label = diaryMode && diaryPage > 0
+        ? `${Cal.MONTHS[diaryPage - 1]} ${viewYear}`
+        : `${Cal.MONTHS[viewMonth]} ${viewYear}`;
+      UI.downloadMonth(label);
+    });
 
-    // reminders permission
     on('bellBtn', 'click', async () => {
       if (!('Notification' in window)) { UI.toast('Notifications are not supported here.'); return; }
       const perm = await Notification.requestPermission();
@@ -229,11 +260,9 @@
         : 'Reminders off — the in-app banner still reminds you.');
     });
 
-    // first render
     render();
     maybeNotify();
 
-    // onboarding (after first paint so the board is visible behind it)
     if (!Store.hasOnboarded()) {
       UI.showOnboarding(() => Store.markOnboarded());
     }

@@ -287,3 +287,96 @@ body.diary-on .polaroid, body.diary-on .cloud { cursor: default; }
 @media (prefers-reduced-motion: reduce) {
   .polaroid, .board.book, .panel, .onboard-card, .toast { animation: none; transition: none; }
 }
+
+/* ============ DIARY COVER ============ */
+.board.cover { min-height: 560px; display: flex; align-items: center; justify-content: center; }
+.cover-inner {
+  position: relative; width: 100%; min-height: 520px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* photos peeking from behind the collage */
+.cover-peeks { position: absolute; inset: 0; }
+.cover-peeks .peek {
+  position: absolute; width: 120px; height: 120px; object-fit: cover;
+  border: 6px solid #fff; border-radius: 3px; box-shadow: 0 8px 20px var(--shadow);
+}
+.peek0 { top: 8%;  left: 10%;  transform: rotate(-8deg); }
+.peek1 { top: 12%; right: 9%;  transform: rotate(7deg); }
+.peek2 { bottom: 12%; left: 13%; transform: rotate(6deg); }
+.peek3 { bottom: 9%; right: 12%; transform: rotate(-6deg); }
+
+/* postcard base */
+.cover-collage { position: relative; width: 340px; height: 340px; }
+.cover-postcard {
+  position: absolute; top: 30px; left: 20px; right: 20px; bottom: 40px;
+  background: #f3ead6; border: 1px solid #ddd0b0; border-radius: 4px;
+  transform: rotate(-3deg); box-shadow: 0 10px 26px var(--shadow);
+  background-image: linear-gradient(#e9dcc0 1px, transparent 1px);
+  background-size: 100% 26px; background-position: 0 40px;
+}
+
+/* ransom-note "2026" */
+.ransom {
+  position: absolute; top: 78px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 4px; z-index: 3;
+}
+.cut {
+  display: inline-block; font-size: 3.6rem; line-height: .9; padding: 4px 10px;
+  border-radius: 4px; box-shadow: 0 4px 10px var(--shadow);
+}
+.cut.c1 { font-family: 'Bungee', cursive; background: var(--accent); color: #fff; transform: rotate(-7deg); }
+.cut.c2 { font-family: 'Archivo Black', sans-serif; background: #fff; color: var(--accent); border: 2px solid var(--accent); transform: rotate(5deg); }
+.cut.c3 { font-family: 'Fraunces', serif; font-weight: 700; background: color-mix(in srgb, var(--accent) 65%, #7a2f4a); color: #fff; transform: rotate(-4deg); }
+.cut.c4 { font-family: 'Bungee', cursive; background: #f3ead6; color: color-mix(in srgb, var(--accent) 80%, #000); transform: rotate(6deg); }
+
+/* MEMORIES tag */
+.cover-tag {
+  position: absolute; bottom: 66px; left: 40px; z-index: 4;
+  background: #efe3c6; color: #6b5a3a; font-family: 'Nunito', sans-serif; font-weight: 800;
+  letter-spacing: .12em; font-size: .78rem; padding: 8px 14px 8px 20px;
+  border: 1px solid #d8c69c; border-radius: 4px 12px 12px 4px; transform: rotate(-6deg);
+  box-shadow: 0 5px 14px var(--shadow);
+}
+.cover-tag::before {
+  content: ""; position: absolute; left: 7px; top: 50%; transform: translateY(-50%);
+  width: 7px; height: 7px; border-radius: 50%; background: #fff; box-shadow: inset 0 0 0 2px #b9a878;
+}
+
+/* decorations */
+.deco { position: absolute; z-index: 5; user-select: none; }
+.d-star1 { top: 34px; left: 46px; font-size: 2.6rem; color: #c8ccd2; text-shadow: 1px 2px 3px var(--shadow); transform: rotate(-12deg); }
+.d-star2 { bottom: 74px; right: 34px; font-size: 2.4rem; color: #e6b84e; text-shadow: 1px 2px 3px var(--shadow); transform: rotate(10deg); }
+.d-pin  { top: 120px; right: 20px; font-size: 1.9rem; transform: rotate(8deg); }
+.d-safety { bottom: 96px; left: 96px; font-size: 1.7rem; transform: rotate(-40deg); }
+.d-bang { top: 84px; right: 24px; font-size: 2.4rem; font-family: 'Archivo Black', sans-serif; color: var(--ink); transform: rotate(4deg); }
+
+.cover-sub {
+  position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+  font-family: 'Caveat', cursive; font-size: 1.5rem; color: var(--ink); white-space: nowrap; z-index: 4;
+}
+
+/* ============ CONFIRM DIALOG ============ */
+.panel.confirm { max-width: 360px; text-align: left; }
+
+/* ============ MOBILE POLISH ============ */
+@media (max-width: 620px) {
+  .topbar { padding: 10px 14px; }
+  .brand-name { font-size: 1.1rem; }
+  .nav-actions { gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .month-select { min-width: 120px; }
+  .addbar { padding: 0 14px; }
+  .field.grow { min-width: 140px; }
+
+  /* cover scales down so it never overflows */
+  .cover-collage { width: 280px; height: 300px; transform: scale(.92); }
+  .cover-peeks .peek { width: 84px; height: 84px; }
+  .cut { font-size: 2.7rem; padding: 3px 7px; }
+  .cover-sub { font-size: 1.2rem; }
+  .page-arrow.left { left: -10px; }
+  .page-arrow.right { right: -10px; }
+}
+@media (max-width: 400px) {
+  .cover-peeks .peek { width: 66px; height: 66px; }
+  .cover-collage { transform: scale(.82); }
+}

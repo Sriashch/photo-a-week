@@ -20,6 +20,26 @@ const UI = (() => {
     }, 2600);
   }
 
+  /* ---------- confirm dialog ---------- */
+  function confirmDialog({ title, text, okLabel }, onYes) {
+    const scrim = $('confirmPanel');
+    if (!scrim) { if (confirm(text || 'Are you sure?')) onYes(); return; }
+    $('confirmTitle').textContent = title || 'Remove this?';
+    $('confirmText').textContent = text || "This can't be undone.";
+    $('confirmOk').textContent = okLabel || 'Remove';
+    scrim.hidden = false;
+
+    const close = () => {
+      scrim.hidden = true;
+      $('confirmOk').onclick = null;
+      $('confirmCancel').onclick = null;
+      scrim.onclick = null;
+    };
+    $('confirmCancel').onclick = close;
+    scrim.onclick = (e) => { if (e.target === scrim) close(); };
+    $('confirmOk').onclick = () => { close(); onYes(); };
+  }
+
   /* ---------- drag + resize ---------- */
   function makeInteractive(card, item, layer, { resizable, onChange }) {
     card.style.touchAction = 'none';
@@ -75,6 +95,49 @@ const UI = (() => {
     }
   }
 
+  /* ---------- diary cover page ---------- */
+  function renderCover(ctx) {
+    const gallery = $('gallery');
+    gallery.innerHTML = '';
+    const { year, photos, onNavigate } = ctx;
+
+    const board = document.createElement('section');
+    board.className = 'board book cover flip-next';
+
+    // a few of the newest photos peek out behind the collage
+    const peekPhotos = photos
+      .filter(p => p.year === year)
+      .sort((a, b) => b.id - a.id)
+      .slice(0, 4);
+    const peeks = peekPhotos.map((p, i) =>
+      `<img class="peek peek${i}" src="${p.image}" alt="">`).join('');
+
+    board.innerHTML = `
+      <div class="capture-target cover-inner">
+        <div class="cover-peeks">${peeks}</div>
+        <div class="cover-collage">
+          <div class="cover-postcard"></div>
+          <div class="ransom">
+            <span class="cut c1">2</span><span class="cut c2">0</span><span class="cut c3">2</span><span class="cut c4">6</span>
+          </div>
+          <div class="cover-tag">MEMORIES</div>
+          <span class="deco d-star1">★</span>
+          <span class="deco d-star2">✩</span>
+          <span class="deco d-pin">📌</span>
+          <span class="deco d-safety">🧷</span>
+          <span class="deco d-bang">❕❕</span>
+          <div class="cover-sub">my year, one week at a time</div>
+        </div>
+      </div>
+      <button class="page-arrow left" disabled aria-label="Previous">‹</button>
+      <button class="page-arrow right" aria-label="Begin">›</button>
+      <div class="page-label">cover · tap › to begin</div>`;
+    gallery.appendChild(board);
+
+    const r = board.querySelector('.page-arrow.right');
+    if (r) r.addEventListener('click', () => onNavigate(1));
+  }
+
   /* ---------- render the month board ---------- */
   function renderBoard(ctx) {
     const gallery = $('gallery');
@@ -102,7 +165,6 @@ const UI = (() => {
 
     const layer = board.querySelector('.scatter');
 
-    // photos
     const monthPhotos = photos
       .filter(p => p.year === year && p.month === month)
       .sort((a, b) => a.week - b.week);
@@ -125,7 +187,6 @@ const UI = (() => {
       if (!diaryMode) makeInteractive(card, p, layer, { resizable: true, onChange: onArrange });
     });
 
-    // message clouds
     const monthMsgs = messages.filter(m => m.year === year && m.month === month);
     monthMsgs.forEach(m => {
       const cloud = document.createElement('div');
@@ -139,7 +200,6 @@ const UI = (() => {
       if (!diaryMode) makeInteractive(cloud, m, layer, { resizable: false, onChange: onArrange });
     });
 
-    // empty / nudge states (edit mode only)
     if (!diaryMode && monthPhotos.length === 0) {
       const hint = document.createElement('p');
       hint.className = 'hint';
@@ -156,12 +216,11 @@ const UI = (() => {
       layer.appendChild(nudge);
     }
 
-    // diary page-turn controls
     if (diaryMode) {
       board.insertAdjacentHTML('beforeend', `
-        <button class="page-arrow left" ${month === 0 ? 'disabled' : ''} aria-label="Previous page">‹</button>
+        <button class="page-arrow left" aria-label="Previous page">‹</button>
         <button class="page-arrow right" ${month === 11 ? 'disabled' : ''} aria-label="Next page">›</button>
-        <div class="page-label">${Cal.MONTHS[month]} · page ${month + 1} of 12</div>`);
+        <div class="page-label">${Cal.MONTHS[month]} · page ${month + 2} of 13</div>`);
       const l = board.querySelector('.page-arrow.left');
       const r = board.querySelector('.page-arrow.right');
       if (l) l.addEventListener('click', () => onNavigate(-1));
@@ -230,5 +289,5 @@ const UI = (() => {
     }
   }
 
-  return { toast, renderBoard, openNotePanel, showOnboarding, downloadMonth };
+  return { toast, confirmDialog, renderBoard, renderCover, openNotePanel, showOnboarding, downloadMonth };
 })();
