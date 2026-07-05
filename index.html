@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photo a Week</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-theme="coquette">
+
+  <!-- ===== TOP NAV ===== -->
+  <nav class="topbar">
+    <div class="brand">
+      <span class="brand-mark">✦</span>
+      <span class="brand-name">Photo a Week</span>
+    </div>
+
+    <div class="nav-center">
+      <button id="prevMonth" class="icon-btn" title="Previous month" aria-label="Previous month">‹</button>
+      <select id="monthSelect" class="month-select" aria-label="Choose month"></select>
+      <button id="nextMonth" class="icon-btn" title="Next month" aria-label="Next month">›</button>
+    </div>
+
+    <div class="nav-actions">
+      <div class="themes" id="themes">
+        <button class="swatch" data-theme="coquette" title="Coquette"></button>
+        <button class="swatch" data-theme="matcha"   title="Matcha"></button>
+        <button class="swatch" data-theme="butter"   title="Butter"></button>
+        <button class="swatch" data-theme="peach"    title="Peach"></button>
+        <button class="swatch" data-theme="midnight" title="Midnight"></button>
+        <button class="swatch" data-theme="paper"    title="Paper (white)"></button>
+      </div>
+      <button id="downloadBtn" class="pill-btn subtle" title="Save this month as an image">⬇ Save</button>
+      <button id="diaryBtn" class="pill-btn" title="Flip through your diary">📖 Diary</button>
+    </div>
+  </nav>
+
+  <!-- ===== ADD BAR ===== -->
+  <section class="addbar" id="addbar">
+    <input type="text" id="captionInput" class="field grow" placeholder="Write a note for this week…" maxlength="80">
+    <label class="pill-btn accent">
+      + Add photo
+      <input type="file" id="fileInput" accept="image/*" hidden>
+    </label>
+    <button id="monthNoteBtn" class="pill-btn subtle" title="Add a note for the month">☁ Month note</button>
+    <button id="bellBtn" class="pill-btn subtle" title="Weekly reminders">🔔</button>
+  </section>
+
+  <div id="reminder" class="reminder"></div>
+  <div id="status" class="status"></div>
+
+  <!-- ===== BOARD ===== -->
+  <main id="gallery" class="gallery"></main>
+
+  <!-- ===== MONTH-NOTE PANEL ===== -->
+  <div class="panel-scrim" id="notePanel" hidden>
+    <div class="panel">
+      <h3 id="notePanelTitle">A note for this month</h3>
+      <p class="panel-sub">One line about how the month felt. It floats on the calendar as a little cloud.</p>
+      <textarea id="noteText" maxlength="120" rows="3" placeholder="e.g. slow mornings, long walks, felt like myself again"></textarea>
+      <div class="panel-actions">
+        <button id="noteCancel" class="pill-btn subtle">Cancel</button>
+        <button id="noteSave" class="pill-btn accent">Add note</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ONBOARDING ===== -->
+  <div class="onboard-scrim" id="onboard" hidden>
+    <div class="onboard-card">
+      <div class="onboard-mark">✦</div>
+      <h2>Your year, one photo a week.</h2>
+      <p class="onboard-lead">A little scrapbook that lives in your browser. Here's the whole thing in three steps.</p>
+      <ol class="onboard-steps">
+        <li><span>1</span><div><strong>Add a photo each week.</strong> Write a quick note, drop in a picture — it lands on that month's calendar.</div></li>
+        <li><span>2</span><div><strong>Arrange it your way.</strong> Drag frames around, resize them, add a month note. It saves as you go.</div></li>
+        <li><span>3</span><div><strong>Flip &amp; share.</strong> Open the diary to page through your year, and save any month as an image to post.</div></li>
+      </ol>
+      <button id="onboardStart" class="pill-btn accent big">Start my diary →</button>
+    </div>
+  </div>
+
+  <!-- ===== TOAST ===== -->
+  <div id="toast" class="toast" hidden></div>
+
+  <!-- html2canvas for "save as image" -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- app files, loaded in order -->
+  <script src="js/storage.js"></script>
+  <script src="js/calendar.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
