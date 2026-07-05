@@ -41,6 +41,7 @@
   <!-- ===== ADD BAR ===== -->
   <section class="addbar" id="addbar">
     <input type="text" id="captionInput" class="field grow" placeholder="Write a note for this week…" maxlength="80">
+    <input type="text" id="songInput" class="field song-field" placeholder="🎵 song of the week (optional)" maxlength="60">
     <label class="pill-btn accent">
       + Add photo
       <input type="file" id="fileInput" accept="image/*" hidden>
@@ -68,19 +69,9 @@
     </div>
   </div>
 
-  <!-- ===== ONBOARDING ===== -->
+  <!-- ===== ONBOARDING (filled by JS) ===== -->
   <div class="onboard-scrim" id="onboard" hidden>
-    <div class="onboard-card">
-      <div class="onboard-mark">✦</div>
-      <h2>Your year, one photo a week.</h2>
-      <p class="onboard-lead">A little scrapbook that lives in your browser. Here's the whole thing in three steps.</p>
-      <ol class="onboard-steps">
-        <li><span>1</span><div><strong>Add a photo each week.</strong> Write a quick note, drop in a picture — it lands on that month's calendar.</div></li>
-        <li><span>2</span><div><strong>Arrange it your way.</strong> Drag frames around, resize them, add a month note. It saves as you go.</div></li>
-        <li><span>3</span><div><strong>Flip &amp; share.</strong> Open the diary to page through your year, and save any month as an image to post.</div></li>
-      </ol>
-      <button id="onboardStart" class="pill-btn accent big">Start my diary →</button>
-    </div>
+    <div class="onboard-card" id="onboardCard"></div>
   </div>
 
   <!-- ===== CONFIRM DIALOG ===== -->

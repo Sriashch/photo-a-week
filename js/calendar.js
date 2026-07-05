@@ -38,5 +38,28 @@ const Cal = (() => {
     return { head, cells, weeks };
   }
 
-  return { MONTHS, DOWS, firstOffset, daysIn, weeksIn, weekOfDate, buildGrid };
+  // Derive zodiac sign from a month (0-11) and day.
+  function zodiac(month, day) {
+    const signs = [
+      { name: 'Capricorn',   emoji: '♑', until: [0, 19] },
+      { name: 'Aquarius',    emoji: '♒', until: [1, 18] },
+      { name: 'Pisces',      emoji: '♓', until: [2, 20] },
+      { name: 'Aries',       emoji: '♈', until: [3, 19] },
+      { name: 'Taurus',      emoji: '♉', until: [4, 20] },
+      { name: 'Gemini',      emoji: '♊', until: [5, 20] },
+      { name: 'Cancer',      emoji: '♋', until: [6, 22] },
+      { name: 'Leo',         emoji: '♌', until: [7, 22] },
+      { name: 'Virgo',       emoji: '♍', until: [8, 22] },
+      { name: 'Libra',       emoji: '♎', until: [9, 22] },
+      { name: 'Scorpio',     emoji: '♏', until: [10, 21] },
+      { name: 'Sagittarius', emoji: '♐', until: [11, 21] },
+    ];
+    for (const s of signs) {
+      const [m, d] = s.until;
+      if (month < m || (month === m && day <= d)) return { name: s.name, emoji: s.emoji };
+    }
+    return { name: 'Capricorn', emoji: '♑' }; // Dec 22–31
+  }
+
+  return { MONTHS, DOWS, firstOffset, daysIn, weeksIn, weekOfDate, buildGrid, zodiac };
 })();

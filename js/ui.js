@@ -99,12 +99,11 @@ const UI = (() => {
   function renderCover(ctx) {
     const gallery = $('gallery');
     gallery.innerHTML = '';
-    const { year, photos, onNavigate } = ctx;
+    const { year, photos, profile, onNavigate } = ctx;
 
     const board = document.createElement('section');
     board.className = 'board book cover flip-next';
 
-    // a few of the newest photos peek out behind the collage
     const peekPhotos = photos
       .filter(p => p.year === year)
       .sort((a, b) => b.id - a.id)
@@ -112,12 +111,16 @@ const UI = (() => {
     const peeks = peekPhotos.map((p, i) =>
       `<img class="peek peek${i}" src="${p.image}" alt="">`).join('');
 
+    const name = profile && profile.name ? profile.name : '';
+    const zod = profile && profile.zodiac ? ` · ${profile.zodiac.emoji} ${profile.zodiac.name}` : '';
+    const subline = (name ? `${name}'s year` : 'my year') + zod;
+
     board.innerHTML = `
       <div class="capture-target cover-inner">
         <div class="cover-card">
           <div class="cover-peeks">${peeks}</div>
           <img class="cover-art" src="assets/cover.png" alt="2026 recap">
-          <div class="cover-sub">my year, one week at a time</div>
+          <div class="cover-sub">${esc(subline)}</div>
         </div>
       </div>
       <button class="page-arrow left" disabled aria-label="Previous">‹</button>
@@ -172,6 +175,7 @@ const UI = (() => {
         <span class="week-tag">Week ${p.week}</span>
         <img src="${p.image}" alt="Week ${p.week}" draggable="false">
         <p class="note">${esc(p.caption)}</p>
+        ${p.song ? `<p class="song">♫ ${esc(p.song)}</p>` : ''}
         <span class="resize-handle" title="Resize"></span>`;
       card.querySelector('.delete-btn').addEventListener('click', (e) => { e.stopPropagation(); onDeletePhoto(p.id); });
       layer.appendChild(card);
@@ -248,12 +252,105 @@ const UI = (() => {
     };
   }
 
-  /* ---------- onboarding ---------- */
-  function showOnboarding(onDone) {
+  /* ---------- onboarding (name → theme → birthday) ---------- */
+  function showOnboarding({ themes, currentTheme, onTheme }, onDone) {
     const scrim = $('onboard');
-    if (!scrim) { onDone(); return; }
+    const card = $('onboardCard');
+    if (!scrim || !card) { onDone({}); return; }
+
+    const draft = { name: '', birthday: '' };
+    let step = 0;
     scrim.hidden = false;
-    $('onboardStart').onclick = () => { scrim.hidden = true; onDone(); };
+
+    const dots = () => `<div class="ob-dots">${[0,1,2].map(i =>
+      `<span class="${i === step ? 'on' : ''}"></span>`).join('')}</div>`;
+
+    function zodiacLine() {
+      if (!draft.birthday) return '';
+      const d = new Date(draft.birthday);
+      if (isNaN(d)) return '';
+      const z = Cal.zodiac(d.getMonth(), d.getDate());
+      return `<div class="ob-zodiac">${z.emoji} You're a ${z.name}</div>`;
+    }
+
+    function paint() {
+      if (step === 0) {
+        card.innerHTML = `
+          <div class="onboard-mark">✦</div>
+          <h2>Let's set up your diary.</h2>
+          <p class="onboard-lead">First — what should we call you?</p>
+          <input type="text" id="obName" class="ob-input" maxlength="24" placeholder="Your name" value="${draft.name}">
+          <button id="obNext" class="pill-btn accent big">Next →</button>
+          ${dots()}`;
+        const input = $('obName');
+        setTimeout(() => input && input.focus(), 50);
+        input.addEventListener('input', () => { draft.name = input.value.trim(); });
+        input.addEventListener('keydown', (e) => { if (e.key === 'Enter') next(); });
+        $('obNext').onclick = next;
+      } else if (step === 1) {
+        card.innerHTML = `
+          <div class="onboard-mark">✦</div>
+          <h2>${draft.name ? draft.name + ', pick' : 'Pick'} your vibe.</h2>
+          <p class="onboard-lead">This colours your whole diary. You can change it anytime.</p>
+          <div class="ob-themes">${themes.map(t =>
+            `<button class="ob-swatch ${t === currentTheme ? 'active' : ''}" data-t="${t}" title="${t}"
+                     style="background:${swatchColor(t)}"></button>`).join('')}</div>
+          <div class="ob-nav">
+            <button id="obBack" class="pill-btn subtle">Back</button>
+            <button id="obNext" class="pill-btn accent">Next →</button>
+          </div>
+          ${dots()}`;
+        card.querySelectorAll('.ob-swatch').forEach(b =>
+          b.addEventListener('click', () => {
+            currentTheme = b.dataset.t;
+            onTheme(currentTheme);
+            card.querySelectorAll('.ob-swatch').forEach(x => x.classList.toggle('active', x === b));
+          }));
+        $('obBack').onclick = back;
+        $('obNext').onclick = next;
+      } else {
+        card.innerHTML = `
+          <div class="onboard-mark">✦</div>
+          <h2>When's your birthday?</h2>
+          <p class="onboard-lead">Optional — we'll add your zodiac to the cover. That's the only reason we ask.</p>
+          <input type="date" id="obDob" class="ob-input" value="${draft.birthday}">
+          <div id="obZodiac">${zodiacLine()}</div>
+          <div class="ob-nav">
+            <button id="obBack" class="pill-btn subtle">Back</button>
+            <button id="obFinish" class="pill-btn accent">Start my diary →</button>
+          </div>
+          ${dots()}`;
+        const dob = $('obDob');
+        dob.addEventListener('change', () => {
+          draft.birthday = dob.value;
+          $('obZodiac').innerHTML = zodiacLine();
+        });
+        $('obBack').onclick = back;
+        $('obFinish').onclick = finish;
+      }
+    }
+
+    function next() { if (step < 2) { step++; paint(); } }
+    function back() { if (step > 0) { step--; paint(); } }
+    function finish() {
+      const profile = { name: draft.name, birthday: draft.birthday };
+      if (draft.birthday) {
+        const d = new Date(draft.birthday);
+        if (!isNaN(d)) profile.zodiac = Cal.zodiac(d.getMonth(), d.getDate());
+      }
+      scrim.hidden = true;
+      onDone(profile);
+    }
+
+    paint();
+  }
+
+  // colour for a theme swatch (mirrors the CSS swatch colours)
+  function swatchColor(t) {
+    return {
+      coquette: '#d98aa0', matcha: '#8a9a5b', butter: '#d8ab3f',
+      peach: '#e0895f', midnight: '#26232f', paper: '#ffffff',
+    }[t] || '#d98aa0';
   }
 
   /* ---------- save month as image ---------- */

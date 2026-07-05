@@ -12,6 +12,7 @@
   // ----- state -----
   let photos = Store.getPhotos();
   let messages = Store.getMessages();
+  let profile = Store.getProfile();
   let viewYear = today.getFullYear();
   let viewMonth = today.getMonth();
   let diaryMode = false;
@@ -100,7 +101,7 @@
 
     // diary cover
     if (diaryMode && diaryPage === 0) {
-      UI.renderCover({ year: viewYear, photos, onNavigate: turnPage });
+      UI.renderCover({ year: viewYear, photos, profile, onNavigate: turnPage });
       updateStatus(0, 0);
       checkReminder();
       return;
@@ -203,6 +204,7 @@
 
     const fileInput = $('fileInput');
     const captionInput = $('captionInput');
+    const songInput = $('songInput');
     if (fileInput) {
       fileInput.addEventListener('change', () => {
         const file = fileInput.files[0];
@@ -211,6 +213,7 @@
         if (!note) { UI.toast('Write a note for this week first.'); if (captionInput) captionInput.focus(); fileInput.value = ''; return; }
         const slot = nextFreeSlot(viewYear, viewMonth);
         if (!slot) { UI.toast(`${Cal.MONTHS[viewMonth]} is full — move to the next month.`); fileInput.value = ''; return; }
+        const song = songInput ? songInput.value.trim() : '';
 
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -219,11 +222,12 @@
             const pos = scatterFor(slot.week, slot.slot, Cal.weeksIn(viewYear, viewMonth));
             photos.push({
               id: Date.now(), year: viewYear, month: viewMonth, week: slot.week,
-              caption: note, image: shrinkImage(img),
+              caption: note, song, image: shrinkImage(img),
               x: pos.x, y: pos.y, w: 150, rot: pos.rot,
             });
             if (!Store.savePhotos(photos)) UI.toast('Storage is full — delete an older photo.');
             if (captionInput) captionInput.value = '';
+            if (songInput) songInput.value = '';
             fileInput.value = '';
             render();
           };
@@ -264,7 +268,19 @@
     maybeNotify();
 
     if (!Store.hasOnboarded()) {
-      UI.showOnboarding(() => Store.markOnboarded());
+      UI.showOnboarding(
+        {
+          themes: ['coquette', 'matcha', 'butter', 'peach', 'midnight', 'paper'],
+          currentTheme: Store.getTheme(),
+          onTheme: applyTheme,
+        },
+        (newProfile) => {
+          profile = newProfile;
+          Store.saveProfile(profile);
+          Store.markOnboarded();
+          render(); // cover/greeting can now use the name
+        }
+      );
     }
   }
 

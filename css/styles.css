@@ -343,3 +343,35 @@ body.diary-on .polaroid, body.diary-on .cloud { cursor: default; }
   .cover-peeks .peek { width: 60px; height: 60px; }
   .cover-card { width: 280px; }
 }
+
+/* ============ ONBOARDING STEPPER ============ */
+.ob-input {
+  width: 100%; padding: 13px 16px; margin-bottom: 18px;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--ink);
+  font-family: inherit; font-size: 1.05rem; text-align: center;
+}
+.ob-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ob-themes { display: flex; justify-content: center; gap: 12px; margin-bottom: 22px; }
+.ob-swatch {
+  width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
+  border: 2px solid var(--board); box-shadow: 0 0 0 1px var(--line), 0 3px 8px var(--shadow);
+  transition: transform .12s ease;
+}
+.ob-swatch:hover { transform: scale(1.12); }
+.ob-swatch.active { outline: 3px solid var(--accent); outline-offset: 2px; }
+.ob-nav { display: flex; justify-content: center; gap: 10px; margin-top: 4px; }
+.ob-zodiac {
+  font-family: 'Caveat', cursive; font-size: 1.5rem; color: var(--accent);
+  margin: -6px 0 18px; min-height: 1.6em;
+}
+.ob-dots { display: flex; justify-content: center; gap: 7px; margin-top: 20px; }
+.ob-dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--line); transition: background .2s ease; }
+.ob-dots span.on { background: var(--accent); }
+
+/* ============ SONG OF THE WEEK ============ */
+.song-field { min-width: 180px; flex: 0 1 220px; }
+.polaroid .song {
+  font-family: 'Caveat', cursive; font-size: .98rem; color: var(--accent);
+  text-align: center; padding: 0 4px 10px; line-height: 1.05; pointer-events: none;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}

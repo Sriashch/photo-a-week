@@ -9,6 +9,7 @@ const Store = (() => {
     theme:    'photoAWeekTheme',
     onboard:  'photoAWeekOnboarded',
     notified: 'photoAWeekNotified',
+    profile:  'photoAWeekProfile',
   };
 
   function read(key, fallback) {
@@ -49,5 +50,9 @@ const Store = (() => {
     // last-notified week key (so we only nudge once per week)
     getNotified()   { return read(KEYS.notified, ''); },
     setNotified(k)  { write(KEYS.notified, k); },
+
+    // profile (name, birthday, zodiac)
+    getProfile()  { return read(KEYS.profile, {}); },
+    saveProfile(p) { return write(KEYS.profile, p); },
   };
 })();
