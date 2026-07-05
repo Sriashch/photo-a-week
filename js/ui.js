@@ -114,18 +114,9 @@ const UI = (() => {
 
     board.innerHTML = `
       <div class="capture-target cover-inner">
-        <div class="cover-peeks">${peeks}</div>
-        <div class="cover-collage">
-          <div class="cover-postcard"></div>
-          <div class="ransom">
-            <span class="cut c1">2</span><span class="cut c2">0</span><span class="cut c3">2</span><span class="cut c4">6</span>
-          </div>
-          <div class="cover-tag">MEMORIES</div>
-          <span class="deco d-star1">★</span>
-          <span class="deco d-star2">✩</span>
-          <span class="deco d-pin">📌</span>
-          <span class="deco d-safety">🧷</span>
-          <span class="deco d-bang">❕❕</span>
+        <div class="cover-card">
+          <div class="cover-peeks">${peeks}</div>
+          <img class="cover-art" src="assets/cover.png" alt="2026 recap">
           <div class="cover-sub">my year, one week at a time</div>
         </div>
       </div>
