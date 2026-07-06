@@ -8,6 +8,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bungee&family=Caveat:wght@600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
+
+  <!-- PWA: installable to home screen -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#d98aa0">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Photo a Week">
+  <meta name="mobile-web-app-capable" content="yes">
 </head>
 <body data-theme="coquette">
 
@@ -115,5 +124,14 @@
   <script src="js/ui.js"></script>
   <script src="js/app.js"></script>
   <script src="js/auth.js"></script>
+
+  <!-- register the service worker so the app can be installed -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('service-worker.js').catch(function () {});
+      });
+    }
+  </script>
 </body>
 </html>
