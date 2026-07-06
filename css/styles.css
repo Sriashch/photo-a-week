@@ -375,3 +375,29 @@ body.diary-on .polaroid, body.diary-on .cloud { cursor: default; }
   text-align: center; padding: 0 4px 10px; line-height: 1.05; pointer-events: none;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+
+/* ============ LOGIN GATE ============ */
+.auth-scrim {
+  position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
+  background: var(--paper); padding: 20px;
+}
+.auth-scrim[hidden] { display: none; }
+.auth-card {
+  width: 100%; max-width: 380px; background: var(--board); color: var(--ink);
+  border-radius: 22px; padding: 34px 30px; text-align: center;
+  box-shadow: 0 28px 70px rgba(0,0,0,0.24); animation: panelIn .28s ease;
+}
+.auth-card h2 { font-family: 'Fraunces', serif; font-weight: 600; font-size: 1.6rem; margin-bottom: 6px; }
+.auth-card .ob-input { text-align: left; margin-bottom: 12px; }
+.auth-error {
+  display: none; color: #c0392b; background: #fdeceb; border: 1px solid #f5c6c2;
+  border-radius: 10px; padding: 8px 12px; font-size: .86rem; margin-bottom: 12px; text-align: left;
+}
+.auth-toggle { margin-top: 16px; color: var(--muted); font-size: .9rem; }
+
+/* keep the app hidden behind the gate until logged in */
+body.logged-out .topbar,
+body.logged-out .addbar,
+body.logged-out .reminder,
+body.logged-out .status,
+body.logged-out .gallery { visibility: hidden; }
