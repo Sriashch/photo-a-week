@@ -11,7 +11,7 @@
       <div class="share-mark">✦</div>
       <h2>${esc(title)}</h2>
       ${sub ? `<p>${esc(sub)}</p>` : ''}
-      <a class="pill-btn accent big" href="./">Make your own →</a>
+      <a class="pill-btn accent big" href="./?signup=1">Make your own →</a>
     </div>`;
   }
 
@@ -61,7 +61,7 @@
         <p class="share-note">Shared from Photo a Week · view only</p>
       </header>
       <main class="gallery">${boards}</main>
-      <footer class="share-foot"><a class="pill-btn accent" href="./">Make your own diary →</a></footer>`;
+      <footer class="share-foot"><a class="pill-btn accent" href="./?signup=1">Make your own diary →</a></footer>`;
   }
 
   (async function init() {

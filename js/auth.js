@@ -7,7 +7,7 @@
   const scrim = $('authScrim');
   if (!scrim || typeof SB === 'undefined') return;
 
-  let mode = 'signin';
+  let mode = new URLSearchParams(location.search).get('signup') === '1' ? 'signup' : 'signin';
 
   /* ---------- helpers ---------- */
   const emailValid = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
