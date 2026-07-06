@@ -43,6 +43,7 @@
         <button class="swatch" data-theme="paper"    title="Paper (white)"></button>
       </div>
       <button id="downloadBtn" class="pill-btn subtle" title="Save this month as an image">⬇ Save</button>
+      <button id="shareBtn" class="pill-btn subtle" title="Share a read-only link">🔗 Share</button>
       <button id="diaryBtn" class="pill-btn" title="Flip through your diary">📖 Diary</button>
       <button id="authSignOut" class="pill-btn subtle" title="Sign out" hidden>Sign out</button>
     </div>
@@ -93,6 +94,40 @@
       <div id="authForm"></div>
       <div id="authError" class="auth-error"></div>
       <p class="auth-toggle" id="authToggle"></p>
+    </div>
+  </div>
+
+  <!-- ===== SHARE PANEL ===== -->
+  <div class="panel-scrim" id="sharePanel" hidden>
+    <div class="panel share">
+      <h3>Share a read-only link</h3>
+      <p class="panel-sub">Anyone with the link can view — but not edit. Your account and other months stay private.</p>
+
+      <label class="field-label">What to share</label>
+      <div class="seg" id="shareScope">
+        <button class="seg-btn active" data-v="month">This month</button>
+        <button class="seg-btn" data-v="year">Whole year</button>
+      </div>
+
+      <label class="field-label">Link lifetime</label>
+      <div class="seg wrap" id="shareTtl">
+        <button class="seg-btn active" data-v="once">View once</button>
+        <button class="seg-btn" data-v="7">7 days</button>
+        <button class="seg-btn" data-v="30">30 days</button>
+        <button class="seg-btn" data-v="none">No limit</button>
+      </div>
+
+      <div id="shareResult" class="share-result" hidden>
+        <input type="text" id="shareLink" class="ob-input" readonly>
+        <button id="shareCopy" class="pill-btn accent">Copy link</button>
+      </div>
+
+      <div id="shareList" class="share-list"></div>
+
+      <div class="panel-actions">
+        <button id="shareClose" class="pill-btn subtle">Close</button>
+        <button id="shareCreate" class="pill-btn accent">Create link</button>
+      </div>
     </div>
   </div>
 

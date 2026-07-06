@@ -422,3 +422,39 @@ body.logged-out .gallery { visibility: hidden; }
 .auth-error.ok { color: #2e7d4f; background: #eafaf0; border-color: #bfe6cd; }
 .auth-forgot { display: block; margin: 12px auto 0; font-size: .85rem; color: var(--muted); }
 .auth-forgot:hover { color: var(--accent); }
+
+/* ============ SHARE PANEL ============ */
+.panel.share { max-width: 440px; text-align: left; }
+.field-label { display: block; font-size: .82rem; font-weight: 700; color: var(--muted); margin: 14px 0 7px; }
+.seg { display: inline-flex; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 3px; gap: 3px; }
+.seg.wrap { display: flex; flex-wrap: wrap; }
+.seg-btn {
+  border: none; background: transparent; color: var(--ink); font-family: inherit; font-weight: 700;
+  font-size: .85rem; padding: 7px 14px; border-radius: 9px; cursor: pointer;
+}
+.seg-btn.active { background: var(--accent); color: #fff; }
+.share-result { display: flex; gap: 8px; margin-top: 16px; }
+.share-result .ob-input { margin: 0; font-size: .82rem; }
+.share-list { margin-top: 18px; }
+.share-list-title { font-size: .8rem; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+.share-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-top: 1px solid var(--line); font-size: .85rem; }
+.share-row-label { font-weight: 700; }
+.share-row-status { color: var(--muted); margin-left: auto; }
+.share-row .revoke { color: #c0392b; }
+
+/* ============ SHARE VIEWER PAGE ============ */
+.share-view { min-height: 100vh; padding: 30px 20px 60px; }
+.share-header { text-align: center; margin-bottom: 26px; }
+.share-header .brand { justify-content: center; font-size: 1.4rem; }
+.share-note { color: var(--muted); font-size: .9rem; margin-top: 4px; }
+.share-foot { text-align: center; margin-top: 34px; }
+.share-view .gallery { display: flex; flex-direction: column; gap: 40px; }
+.share-msg { text-align: center; color: var(--muted); margin-top: 80px; }
+.share-card {
+  max-width: 380px; margin: 80px auto; background: var(--board); border-radius: 22px;
+  padding: 40px 32px; text-align: center; box-shadow: 0 24px 60px var(--shadow);
+}
+.share-mark { width: 52px; height: 52px; margin: 0 auto 16px; border-radius: 50%; display: grid; place-items: center; font-size: 1.5rem; color: #fff; background: var(--accent); }
+.share-card h2 { font-family: 'Fraunces', serif; font-weight: 600; margin-bottom: 8px; }
+.share-card p { color: var(--muted); margin-bottom: 22px; }
+.share-view .polaroid, .share-view .cloud { cursor: default; }

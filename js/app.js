@@ -197,6 +197,86 @@
     }
   }
 
+  // ----- share links -----
+  function currentMonth() { return diaryMode && diaryPage > 0 ? diaryPage - 1 : viewMonth; }
+  function segValue(id) { const a = document.querySelector('#' + id + ' .seg-btn.active'); return a ? a.dataset.v : null; }
+
+  function openSharePanel() {
+    const scrim = $('sharePanel');
+    if (!scrim) return;
+    $('shareResult').hidden = true;
+    scrim.hidden = false;
+    // segmented toggles
+    scrim.querySelectorAll('.seg').forEach(seg => {
+      seg.querySelectorAll('.seg-btn').forEach(btn => {
+        btn.onclick = () => { seg.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); };
+      });
+    });
+    $('shareClose').onclick = () => { scrim.hidden = true; };
+    scrim.onclick = (e) => { if (e.target === scrim) scrim.hidden = true; };
+    $('shareCreate').onclick = doCreateShare;
+    refreshShareList();
+  }
+
+  async function doCreateShare() {
+    const scope = segValue('shareScope') || 'month';
+    const ttl = segValue('shareTtl') || 'once';
+    const m = currentMonth();
+    const inScope = (p) => scope === 'year' ? p.year === viewYear : (p.year === viewYear && p.month === m);
+    const entries = photos.filter(inScope);
+    const notes = messages.filter(inScope);
+    if (entries.length === 0 && notes.length === 0) { UI.toast('Nothing to share here yet — add a photo first.'); return; }
+
+    const opts = { once: { viewOnce: true, ttlDays: null }, '7': { ttlDays: 7 }, '30': { ttlDays: 30 }, none: { ttlDays: null } }[ttl];
+    const label = scope === 'year' ? `${viewYear}` : `${Cal.MONTHS[m]} ${viewYear}`;
+
+    const btn = $('shareCreate'); btn.disabled = true; btn.textContent = 'Creating…';
+    try {
+      const token = await Store.createShare({
+        scope, year: viewYear, month: m, ttlDays: opts.ttlDays, viewOnce: !!opts.viewOnce,
+        ownerName: (profile && profile.name) || '', theme: Store.getTheme(), label, entries, notes,
+      });
+      const link = new URL('share.html?s=' + token, location.href).href;
+      $('shareLink').value = link;
+      $('shareResult').hidden = false;
+      $('shareCopy').onclick = () => {
+        navigator.clipboard.writeText(link).then(() => UI.toast('Link copied!'),
+          () => { $('shareLink').select(); UI.toast('Select and copy the link.'); });
+      };
+      refreshShareList();
+    } catch (err) {
+      UI.toast('Could not create link: ' + (err && err.message ? err.message : 'try again'));
+    } finally {
+      btn.disabled = false; btn.textContent = 'Create link';
+    }
+  }
+
+  async function refreshShareList() {
+    const box = $('shareList');
+    if (!box) return;
+    let shares = [];
+    try { shares = await Store.getShares(); } catch { box.innerHTML = ''; return; }
+    if (!shares.length) { box.innerHTML = ''; return; }
+    box.innerHTML = `<div class="share-list-title">Your active links</div>` + shares.map(s => {
+      let status = 'No limit';
+      if (s.view_once) status = s.viewed ? 'Viewed (used up)' : 'View once';
+      else if (s.expires_at) {
+        const exp = new Date(s.expires_at);
+        status = exp < new Date() ? 'Expired' : 'Until ' + exp.toLocaleDateString();
+      }
+      return `<div class="share-row">
+        <span class="share-row-label">${escapeAttr(s.title || 'Untitled')}</span>
+        <span class="share-row-status">${status}</span>
+        <button class="link-btn revoke" data-t="${s.token}">Revoke</button>
+      </div>`;
+    }).join('');
+    box.querySelectorAll('.revoke').forEach(b => b.onclick = async () => {
+      try { await Store.revokeShare(b.dataset.t); refreshShareList(); UI.toast('Link revoked.'); }
+      catch { UI.toast('Could not revoke.'); }
+    });
+  }
+  function escapeAttr(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
   // ----- init (DOM wiring) -----
   function init() {
     const monthSelect = $('monthSelect');
@@ -264,6 +344,8 @@
       const label = diaryMode && diaryPage > 0 ? `${Cal.MONTHS[diaryPage - 1]} ${viewYear}` : `${Cal.MONTHS[viewMonth]} ${viewYear}`;
       UI.downloadMonth(label);
     });
+
+    on('shareBtn', 'click', openSharePanel);
 
     on('bellBtn', 'click', async () => {
       if (!('Notification' in window)) { UI.toast('Notifications are not supported here.'); return; }

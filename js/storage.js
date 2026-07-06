@@ -105,10 +105,52 @@ const Store = (() => {
     if (error) throw error;
   }
 
+  /* ---------- share links ---------- */
+  // Build a self-contained snapshot (with long-lived signed photo URLs) and
+  // save it as a share row. Returns the token.
+  async function createShare({ scope, year, month, ttlDays, viewOnce, ownerName, theme, label, entries, notes }) {
+    const paths = entries.map(e => e.image_path).filter(Boolean);
+    const ttlSeconds = ttlDays ? ttlDays * 86400 : 30 * 86400; // sign 30d for view-once/no-expiry
+    const urlByPath = {};
+    if (paths.length) {
+      const { data: signed } = await SB.storage.from(BUCKET).createSignedUrls(paths, ttlSeconds);
+      (signed || []).forEach(s => { if (s && s.path && s.signedUrl) urlByPath[s.path] = s.signedUrl; });
+    }
+    const payloadEntries = entries.map(e => ({
+      year: e.year, month: e.month, week: e.week, caption: e.caption, song: e.song,
+      image: urlByPath[e.image_path] || e.image, x: e.x, y: e.y, w: e.w, rot: e.rot,
+    }));
+    const payload = {
+      scope, year, month: scope === 'month' ? month : null,
+      ownerName: ownerName || '', theme: theme || 'coquette',
+      entries: payloadEntries, notes,
+    };
+    const expires_at = ttlDays ? new Date(Date.now() + ttlDays * 86400000).toISOString() : null;
+    const { data, error } = await SB.from('shares')
+      .insert({ title: label || null, payload, expires_at, view_once: !!viewOnce })
+      .select('token').single();
+    if (error) throw error;
+    return data.token;
+  }
+
+  async function getShares() {
+    const { data, error } = await SB.from('shares')
+      .select('token,title,expires_at,view_once,viewed,created_at')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  }
+
+  async function revokeShare(token) {
+    const { error } = await SB.from('shares').delete().eq('token', token);
+    if (error) throw error;
+  }
+
   return {
     currentUser,
     getEntries, addEntry, updateEntry, deleteEntry,
     getNotes, addNote, updateNote, deleteNote,
+    createShare, getShares, revokeShare,
     // local prefs
     getTheme()   { return readLocal(KEYS.theme, 'coquette'); },
     setTheme(t)  { writeLocal(KEYS.theme, t); },
