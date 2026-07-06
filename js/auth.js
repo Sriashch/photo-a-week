@@ -29,6 +29,7 @@
     scrim.hidden = false;
     document.body.classList.add('logged-out');
     const so = $('authSignOut'); if (so) so.hidden = true;
+    if (window.paw_clear) window.paw_clear();
     paint();
   }
 
@@ -37,6 +38,7 @@
     document.body.classList.remove('logged-out');
     const so = $('authSignOut');
     if (so) { so.hidden = false; so.title = user && user.email ? `Signed in as ${user.email}` : 'Sign out'; }
+    if (window.paw_load) window.paw_load();   // fetch this user's photos + notes
   }
 
   async function submit() {

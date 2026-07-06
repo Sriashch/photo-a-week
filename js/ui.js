@@ -66,7 +66,7 @@ const UI = (() => {
         card.classList.remove('dragging');
         card.removeEventListener('pointermove', move);
         card.removeEventListener('pointerup', up);
-        onChange();
+        onChange(item);
       };
       card.addEventListener('pointermove', move);
       card.addEventListener('pointerup', up);
@@ -86,7 +86,7 @@ const UI = (() => {
           const up = () => {
             handle.removeEventListener('pointermove', move);
             handle.removeEventListener('pointerup', up);
-            onChange();
+            onChange(item);
           };
           handle.addEventListener('pointermove', move);
           handle.addEventListener('pointerup', up);

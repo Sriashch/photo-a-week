@@ -1,6 +1,7 @@
-/* app.js — owns the view state and wires the DOM to Store + UI + Cal.
-   Everything is bound after DOMContentLoaded, and each binding checks the
-   element exists first, so a missing element can never halt the whole app. */
+/* app.js — owns view state and wires the DOM to Store + UI + Cal.
+   Photos and notes now come from Supabase (async), so data loads after the
+   user signs in. auth.js calls window.paw_load() on login and
+   window.paw_clear() on logout. */
 
 (function () {
   const $ = (id) => document.getElementById(id);
@@ -10,27 +11,14 @@
   const today = new Date();
 
   // ----- state -----
-  let photos = Store.getPhotos();
-  let messages = Store.getMessages();
+  let photos = [];
+  let messages = [];
   let profile = Store.getProfile();
   let viewYear = today.getFullYear();
   let viewMonth = today.getMonth();
   let diaryMode = false;
-  let diaryPage = 0;        // 0 = cover, 1..12 = months (Jan..Dec)
+  let diaryPage = 0;
   let lastDir = 'next';
-
-  // ----- migration -----
-  (function migrate() {
-    let dirty = false;
-    photos.forEach(p => {
-      if (p.x == null && p.year != null) {
-        const s = scatterFor(p.week || 1, 1, Cal.weeksIn(p.year, p.month));
-        p.x = s.x; p.y = s.y; p.rot = s.rot; dirty = true;
-      }
-      if (p.w == null) { p.w = 150; dirty = true; }
-    });
-    if (dirty) Store.savePhotos(photos);
-  })();
 
   function scatterFor(week, slot, weeks) {
     const rots = [-6, 5, -3, 6, -4, 4];
@@ -38,7 +26,6 @@
     const top = Math.min(((week - 1) / weeks) * 100 + 5, 78);
     return { x: baseLeft + (week % 2) * 10, y: top, rot: rots[(week + slot) % rots.length] };
   }
-
   function nextFreeSlot(y, m) {
     for (let w = 1; w <= Cal.weeksIn(y, m); w++) {
       const n = photos.filter(p => p.year === y && p.month === m && p.week === w).length;
@@ -51,12 +38,11 @@
   function applyTheme(t) {
     document.body.dataset.theme = t;
     Store.setTheme(t);
-    document.querySelectorAll('.swatch').forEach(s =>
-      s.classList.toggle('active', s.dataset.theme === t));
+    document.querySelectorAll('.swatch').forEach(s => s.classList.toggle('active', s.dataset.theme === t));
   }
 
-  // ----- image shrink -----
-  function shrinkImage(img) {
+  // ----- shrink image to a JPEG blob for upload -----
+  function shrinkToBlob(img) {
     const max = 640;
     let { width, height } = img;
     if (width > height && width > max) { height *= max / width; width = max; }
@@ -64,33 +50,70 @@
     const c = document.createElement('canvas');
     c.width = width; c.height = height;
     c.getContext('2d').drawImage(img, 0, 0, width, height);
-    return c.toDataURL('image/jpeg', 0.78);
+    return new Promise((res) => c.toBlob(res, 'image/jpeg', 0.78));
   }
 
-  // ----- data callbacks -----
-  function persistArrangement() { Store.savePhotos(photos); Store.saveMessages(messages); }
+  // ----- load / clear (called by auth.js) -----
+  async function load() {
+    try {
+      photos = await Store.getEntries();
+      messages = await Store.getNotes();
+    } catch (e) {
+      UI.toast('Could not load your diary: ' + (e && e.message ? e.message : 'unknown error'));
+      photos = []; messages = [];
+    }
+    render();
+    maybeNotify();
+  }
+  function clearData() { photos = []; messages = []; render(); }
+
+  // ----- data actions -----
+  function persistArrangement(item) {
+    if (!item) return;
+    if ('text' in item) {
+      Store.updateNote(item.id, { x: item.x, y: item.y, rot: item.rot }).catch(() => UI.toast("Couldn't save position."));
+    } else {
+      Store.updateEntry(item.id, { x: item.x, y: item.y, w: item.w, rot: item.rot }).catch(() => UI.toast("Couldn't save position."));
+    }
+  }
 
   function deletePhoto(id) {
+    const p = photos.find(x => x.id === id);
     UI.confirmDialog(
       { title: 'Remove this photo?', text: "The photo and its note will be gone for good.", okLabel: 'Remove' },
-      () => { photos = photos.filter(p => p.id !== id); Store.savePhotos(photos); render(); }
+      async () => {
+        try {
+          await Store.deleteEntry(id, p ? p.image_path : null);
+          photos = photos.filter(x => x.id !== id);
+          render();
+        } catch { UI.toast("Couldn't delete — try again."); }
+      }
     );
   }
   function deleteMessage(id) {
     UI.confirmDialog(
-      { title: 'Remove this note?', text: "This month note will be deleted.", okLabel: 'Remove' },
-      () => { messages = messages.filter(m => m.id !== id); Store.saveMessages(messages); render(); }
+      { title: 'Remove this note?', text: 'This month note will be deleted.', okLabel: 'Remove' },
+      async () => {
+        try {
+          await Store.deleteNote(id);
+          messages = messages.filter(m => m.id !== id);
+          render();
+        } catch { UI.toast("Couldn't delete — try again."); }
+      }
     );
   }
 
   function openMonthNote() {
-    UI.openNotePanel(`${Cal.MONTHS[viewMonth]} ${viewYear}`, (text) => {
-      messages.push({
-        id: Date.now(), year: viewYear, month: viewMonth, text,
+    UI.openNotePanel(`${Cal.MONTHS[viewMonth]} ${viewYear}`, async (text) => {
+      const draft = {
+        year: viewYear, month: viewMonth, text,
         x: 24 + Math.random() * 34, y: 4 + Math.random() * 9, rot: Math.random() * 8 - 4,
-      });
-      Store.saveMessages(messages);
-      render();
+      };
+      try {
+        const note = await Store.addNote(draft);
+        messages.push(note);
+        render();
+      } catch { UI.toast("Couldn't save the note."); }
     });
   }
 
@@ -99,7 +122,6 @@
     const monthSelect = $('monthSelect');
     if (monthSelect && !diaryMode) monthSelect.value = viewMonth;
 
-    // diary cover
     if (diaryMode && diaryPage === 0) {
       UI.renderCover({ year: viewYear, photos, profile, onNavigate: turnPage });
       updateStatus(0, 0);
@@ -108,7 +130,6 @@
     }
 
     const month = diaryMode ? diaryPage - 1 : viewMonth;
-
     const { weeks, count } = UI.renderBoard({
       year: viewYear, month, diaryMode, lastDir, photos, messages,
       onDeletePhoto: deletePhoto,
@@ -143,15 +164,12 @@
       const p = diaryPage + delta;
       if (p < 0 || p > 12) return;
       lastDir = delta > 0 ? 'next' : 'prev';
-      diaryPage = p;
-      render();
-      return;
+      diaryPage = p; render(); return;
     }
     const m = viewMonth + delta;
     if (m < 0 || m > 11) return;
     lastDir = delta > 0 ? 'next' : 'prev';
-    viewMonth = m;
-    render();
+    viewMonth = m; render();
   }
 
   // ----- reminder -----
@@ -166,14 +184,8 @@
       box.innerHTML = `📸 Week ${Cal.weekOfDate(today)} of ${Cal.MONTHS[today.getMonth()]} — no photo yet. ` +
         `<button id="jumpBtn" class="link-btn">Add it now</button>`;
       box.style.display = 'block';
-      on('jumpBtn', 'click', () => {
-        viewMonth = today.getMonth();
-        render();
-        const ci = $('captionInput'); if (ci) ci.focus();
-      });
-    } else {
-      box.style.display = 'none';
-    }
+      on('jumpBtn', 'click', () => { viewMonth = today.getMonth(); render(); const ci = $('captionInput'); if (ci) ci.focus(); });
+    } else { box.style.display = 'none'; }
   }
   function maybeNotify() {
     if (window.Notification && Notification.permission === 'granted' && currentWeekMissing()) {
@@ -185,21 +197,18 @@
     }
   }
 
-  // ----- init -----
+  // ----- init (DOM wiring) -----
   function init() {
     const monthSelect = $('monthSelect');
     if (monthSelect) {
-      monthSelect.innerHTML = Cal.MONTHS
-        .map((name, m) => `<option value="${m}">${name} ${viewYear}</option>`).join('');
+      monthSelect.innerHTML = Cal.MONTHS.map((name, m) => `<option value="${m}">${name} ${viewYear}</option>`).join('');
       monthSelect.value = viewMonth;
       monthSelect.addEventListener('change', () => { lastDir = 'next'; viewMonth = +monthSelect.value; render(); });
     }
-
     on('prevMonth', 'click', () => turnPage(-1));
     on('nextMonth', 'click', () => turnPage(1));
 
-    document.querySelectorAll('.swatch').forEach(s =>
-      s.addEventListener('click', () => applyTheme(s.dataset.theme)));
+    document.querySelectorAll('.swatch').forEach(s => s.addEventListener('click', () => applyTheme(s.dataset.theme)));
     applyTheme(Store.getTheme());
 
     const fileInput = $('fileInput');
@@ -218,18 +227,23 @@
         const reader = new FileReader();
         reader.onload = (e) => {
           const img = new Image();
-          img.onload = () => {
+          img.onload = async () => {
             const pos = scatterFor(slot.week, slot.slot, Cal.weeksIn(viewYear, viewMonth));
-            photos.push({
-              id: Date.now(), year: viewYear, month: viewMonth, week: slot.week,
-              caption: note, song, image: shrinkImage(img),
-              x: pos.x, y: pos.y, w: 150, rot: pos.rot,
-            });
-            if (!Store.savePhotos(photos)) UI.toast('Storage is full — delete an older photo.');
+            UI.toast('Uploading…');
+            try {
+              const blob = await shrinkToBlob(img);
+              const entry = await Store.addEntry({
+                year: viewYear, month: viewMonth, week: slot.week,
+                caption: note, song, x: pos.x, y: pos.y, w: 150, rot: pos.rot,
+              }, blob);
+              photos.push(entry);
+              render();
+            } catch (err) {
+              UI.toast('Upload failed: ' + (err && err.message ? err.message : 'try again'));
+            }
             if (captionInput) captionInput.value = '';
             if (songInput) songInput.value = '';
             fileInput.value = '';
-            render();
           };
           img.src = e.target.result;
         };
@@ -240,53 +254,37 @@
     on('monthNoteBtn', 'click', openMonthNote);
 
     on('diaryBtn', 'click', () => {
-      diaryMode = !diaryMode;
-      diaryPage = 0;                 // always open on the cover
-      lastDir = 'next';
+      diaryMode = !diaryMode; diaryPage = 0; lastDir = 'next';
       document.body.classList.toggle('diary-on', diaryMode);
-      const b = $('diaryBtn');
-      if (b) b.textContent = diaryMode ? '✏️ Edit' : '📖 Diary';
+      const b = $('diaryBtn'); if (b) b.textContent = diaryMode ? '✏️ Edit' : '📖 Diary';
       render();
     });
 
     on('downloadBtn', 'click', () => {
-      const label = diaryMode && diaryPage > 0
-        ? `${Cal.MONTHS[diaryPage - 1]} ${viewYear}`
-        : `${Cal.MONTHS[viewMonth]} ${viewYear}`;
+      const label = diaryMode && diaryPage > 0 ? `${Cal.MONTHS[diaryPage - 1]} ${viewYear}` : `${Cal.MONTHS[viewMonth]} ${viewYear}`;
       UI.downloadMonth(label);
     });
 
     on('bellBtn', 'click', async () => {
       if (!('Notification' in window)) { UI.toast('Notifications are not supported here.'); return; }
       const perm = await Notification.requestPermission();
-      UI.toast(perm === 'granted'
-        ? "Reminders on — you'll get a nudge at the start of each week."
-        : 'Reminders off — the in-app banner still reminds you.');
+      UI.toast(perm === 'granted' ? "Reminders on — you'll get a nudge at the start of each week." : 'Reminders off — the in-app banner still reminds you.');
     });
 
-    render();
-    maybeNotify();
+    render(); // empty until data loads after login
 
     if (!Store.hasOnboarded()) {
       UI.showOnboarding(
-        {
-          themes: ['coquette', 'matcha', 'butter', 'peach', 'midnight', 'paper'],
-          currentTheme: Store.getTheme(),
-          onTheme: applyTheme,
-        },
-        (newProfile) => {
-          profile = newProfile;
-          Store.saveProfile(profile);
-          Store.markOnboarded();
-          render(); // cover/greeting can now use the name
-        }
+        { themes: ['coquette', 'matcha', 'butter', 'peach', 'midnight', 'paper'], currentTheme: Store.getTheme(), onTheme: applyTheme },
+        (newProfile) => { profile = newProfile; Store.saveProfile(profile); Store.markOnboarded(); render(); }
       );
     }
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  // expose load/clear for auth.js
+  window.paw_load = load;
+  window.paw_clear = clearData;
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
 })();
