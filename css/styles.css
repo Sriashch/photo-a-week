@@ -417,11 +417,17 @@ body.diary-on .polaroid, body.diary-on .cloud { cursor: default; }
 }
 .auth-toggle { margin-top: 16px; color: var(--muted); font-size: .9rem; }
 
-/* on phones: hide the pitch panel, show just the form full-width */
+/* on phones: stack the pitch above the form (card scrolls if tall) */
 @media (max-width: 720px) {
-  .auth-card.two-panel { max-width: 400px; flex-direction: column; }
-  .auth-pitch { display: none; }
-  .auth-side { padding: 34px 28px; }
+  .auth-scrim { padding: 12px; align-items: flex-start; }
+  .auth-card.two-panel { max-width: 420px; flex-direction: column; max-height: 94vh; overflow-y: auto; margin: 10px auto; }
+  .auth-pitch { flex: none; padding: 26px 24px 22px; }
+  .pitch-title { font-size: 1.5rem; margin-bottom: 16px; }
+  .pitch-list { margin-bottom: 18px; gap: 8px; }
+  .pitch-list li { font-size: .9rem; }
+  .pitch-shot img { max-height: 200px; width: auto; margin: 0 auto; }
+  .pitch-shot { display: flex; justify-content: center; }
+  .auth-side { flex: none; padding: 28px 26px 30px; }
 }
 
 /* keep the app hidden behind the gate until logged in */
