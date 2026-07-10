@@ -63,3 +63,6 @@ const Cal = (() => {
 
   return { MONTHS, DOWS, firstOffset, daysIn, weeksIn, weekOfDate, buildGrid, zodiac };
 })();
+
+// Exported for tests. In the browser `module` is undefined, so this is a no-op.
+if (typeof module !== 'undefined' && module.exports) module.exports = Cal;

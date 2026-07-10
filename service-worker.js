@@ -3,13 +3,14 @@
    online), falling back to cache when offline. Cross-origin requests
    (Supabase, CDNs) are left alone and go straight to the network. */
 
-const CACHE = 'paw-v2';   // bump this (v3, v4…) whenever you change files
+const CACHE = 'paw-v3';   // bump this (v3, v4…) whenever you change files
 const SHELL = [
   './',
   './index.html',
   './share.html',
   './css/styles.css',
   './js/config.js',
+  './js/validate.js',
   './js/storage.js',
   './js/calendar.js',
   './js/ui.js',

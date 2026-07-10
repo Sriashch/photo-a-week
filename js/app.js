@@ -45,12 +45,33 @@
   function shrinkToBlob(img) {
     const max = 640;
     let { width, height } = img;
+    if (!width || !height) return Promise.reject(new Error('That image has no dimensions.'));
     if (width > height && width > max) { height *= max / width; width = max; }
     else if (height > max) { width *= max / height; height = max; }
     const c = document.createElement('canvas');
-    c.width = width; c.height = height;
-    c.getContext('2d').drawImage(img, 0, 0, width, height);
-    return new Promise((res) => c.toBlob(res, 'image/jpeg', 0.78));
+    c.width = Math.round(width); c.height = Math.round(height);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    return new Promise((resolve, reject) => {
+      c.toBlob(
+        (blob) => blob ? resolve(blob) : reject(new Error('Could not process that image.')),
+        'image/jpeg', 0.78
+      );
+    });
+  }
+
+  // Read a File into an <img>, failing loudly instead of hanging.
+  function loadImage(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("Couldn't read that file."));
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error("That file isn't an image the browser can open."));
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
   }
 
   // ----- load / clear (called by auth.js) -----
@@ -294,40 +315,57 @@
     const fileInput = $('fileInput');
     const captionInput = $('captionInput');
     const songInput = $('songInput');
+    let uploading = false;   // guards against double-submit and slot races
+
     if (fileInput) {
-      fileInput.addEventListener('change', () => {
+      fileInput.addEventListener('change', async () => {
         const file = fileInput.files[0];
         if (!file) return;
-        const note = captionInput ? captionInput.value.trim() : '';
-        if (!note) { UI.toast('Write a note for this week first.'); if (captionInput) captionInput.focus(); fileInput.value = ''; return; }
-        const slot = nextFreeSlot(viewYear, viewMonth);
-        if (!slot) { UI.toast(`${Cal.MONTHS[viewMonth]} is full — move to the next month.`); fileInput.value = ''; return; }
-        const song = songInput ? songInput.value.trim() : '';
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const img = new Image();
-          img.onload = async () => {
-            const pos = scatterFor(slot.week, slot.slot, Cal.weeksIn(viewYear, viewMonth));
-            UI.toast('Uploading…');
-            try {
-              const blob = await shrinkToBlob(img);
-              const entry = await Store.addEntry({
-                year: viewYear, month: viewMonth, week: slot.week,
-                caption: note, song, x: pos.x, y: pos.y, w: 150, rot: pos.rot,
-              }, blob);
-              photos.push(entry);
-              render();
-            } catch (err) {
-              UI.toast('Upload failed: ' + (err && err.message ? err.message : 'try again'));
-            }
-            if (captionInput) captionInput.value = '';
-            if (songInput) songInput.value = '';
-            fileInput.value = '';
-          };
-          img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
+        const reset = () => { fileInput.value = ''; };
+
+        if (uploading) { UI.toast('Still uploading the last photo…'); reset(); return; }
+
+        const note = captionInput ? captionInput.value.trim() : '';
+        if (!note) {
+          UI.toast('Write a note for this week first.');
+          if (captionInput) captionInput.focus();
+          return reset();
+        }
+
+        const problem = validateFile(file);
+        if (problem) { UI.toast(problem); return reset(); }
+
+        const slot = nextFreeSlot(viewYear, viewMonth);
+        if (!slot) {
+          UI.toast(`${Cal.MONTHS[viewMonth]} is full — move to the next month.`);
+          return reset();
+        }
+
+        const song = songInput ? songInput.value.trim() : '';
+        uploading = true;
+        UI.toast('Uploading…');
+
+        try {
+          const img = await loadImage(file);
+          const blob = await shrinkToBlob(img);
+          const pos = scatterFor(slot.week, slot.slot, Cal.weeksIn(viewYear, viewMonth));
+
+          const entry = await Store.addEntry({
+            year: viewYear, month: viewMonth, week: slot.week,
+            caption: note, song, x: pos.x, y: pos.y, w: 150, rot: pos.rot,
+          }, blob);
+
+          photos.push(entry);
+          if (captionInput) captionInput.value = '';
+          if (songInput) songInput.value = '';
+          render();
+        } catch (err) {
+          UI.toast(err && err.message ? err.message : 'Upload failed — please try again.');
+        } finally {
+          uploading = false;
+          reset();
+        }
       });
     }
 
